@@ -4,6 +4,8 @@ An AI-powered chest X-ray diagnostic tool that analyzes medical images through a
 
 > **Disclaimer:** This system is developed for academic research purposes only. It is not intended for clinical diagnosis or medical decision-making without review and confirmation by a licensed medical professional.
 
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -16,6 +18,8 @@ An AI-powered chest X-ray diagnostic tool that analyzes medical images through a
 - [Known Limitations](#known-limitations)
 - [Future Enhancements](#future-enhancements)
 - [Academic Context](#academic-context)
+
+---
 
 ## Overview
 
@@ -63,6 +67,8 @@ The system uses **YOLOv8**, a state-of-the-art unified deep learning framework, 
 
 **Data Split:** 70% Train / 15% Validation / 15% Test (stratified to maintain class balance)
 
+---
+
 ## Architecture
 
 ### Architectural Diagram Color Legend
@@ -79,6 +85,26 @@ The system architecture diagrams use the following color coding across all modul
 | Green | Positive outcomes and passed metrics | Performance results that met targets, final outputs |
 | Red | Warning and below target | Level 3 performance below 70% mAP50 target |
 | Gray | Neutral and structural | Inputs, outputs, model specifications, fallback logic |
+
+### Diagram 1 — System Architecture Overview
+*Complete 6-level diagnostic pipeline from image upload to final report*
+
+![System Architecture Overview](daigrams/system_architecture_overview.png)
+
+### Diagram 2 — Level 1 and Level 2 Module Detail
+*Binary classifier (YOLOv8n-cls) and multi-class classifier (YOLOv8l-cls) — model specs, training data, class distribution, and performance*
+
+![Level 1 and Level 2 Modules](daigrams/level1_level2_modules.png)
+
+### Diagram 3 — Level 3 Detection and Lung Segmentation Module Detail
+*YOLOv8s-det opacity detector and OpenCV-based lung segmentation pipeline — 5-step mask extraction process*
+
+![Level 3 and Segmentation Modules](daigrams/level3_segmentation_modules.png)
+
+### Diagram 4 — Level 4, 5 and 6 Module Detail
+*Affected area intersection math, severity assessment rules, and clinical recommendation decision tree*
+
+![Level 4 5 6 Modules](daigrams/level4_5_6_modules.png)
 
 ### System Flow
 
@@ -272,6 +298,8 @@ Additional clinical notes appended based on disease and severity:
 - MODERATE severity with ≥30% affected → Monitor oxygen saturation
 - SEVERE → Consider ICU admission
 
+---
+
 ## Features
 
 ### 6-Level Diagnostic Pipeline
@@ -297,6 +325,8 @@ Rule-based classification applying standard radiological thresholds. Bilateral i
 
 **Level 6 — Clinical Recommendation**
 Decision tree logic that maps severity to a structured clinical recommendation including priority color, recommended action, response timeline, and disease-specific clinical notes.
+
+---
 
 ## Technologies
 
@@ -356,6 +386,8 @@ Single unified framework for both classification and detection, built-in trainin
 | Git | Version control |
 | GitHub | Code repository |
 
+---
+
 ## Infrastructure
 
 ### Training Environment
@@ -403,6 +435,7 @@ lung-opacity-detection/
 └── README.md
 ```
 
+---
 
 ## Performance
 
@@ -450,6 +483,8 @@ Models were trained exclusively on standard Posterior-Anterior (PA) chest X-rays
 **Dataset Scope**
 Training data sourced from public Kaggle datasets. These may not represent the full diversity of real-world clinical imaging across different equipment, patient populations, and geographic regions.
 
+---
+
 ## Deployment
 
 ### Prerequisites
@@ -490,6 +525,8 @@ Frontend running at: `http://localhost:3000`
 | GET | `/api/health` | Check server status | < 1 second |
 | POST | `/api/analyze` | Analyze chest X-ray | < 10 seconds |
 
+---
+
 ## Future Enhancements
 
 - Expand training data to include portable, AP-view, and ICU X-rays to improve model generalization
@@ -502,10 +539,12 @@ Frontend running at: `http://localhost:3000`
 - Add batch processing for multiple X-rays simultaneously
 - Implement user authentication for multi-user clinical environments
 
+---
+
 ## Academic Context
 
-**Course:** INFO7410 — Advanced Medical Device Software Engineering
+**Course:** INFO6255 — Advanced Medical Device Software Engineering
 **Institution:** Northeastern University
 **Student:** Bhavya Reddy
-**Instructor:** Professor Bemin
+**Instructor:** Professor Servattalab
 **Submission:** Individual Project
