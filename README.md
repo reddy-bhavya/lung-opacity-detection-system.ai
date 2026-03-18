@@ -17,6 +17,8 @@ An AI-powered chest X-ray diagnostic tool that analyzes medical images through a
 - [Future Enhancements](#future-enhancements)
 - [Academic Context](#academic-context)
 
+---
+
 ## Overview
 
 ### The Problem
@@ -42,7 +44,7 @@ This system acts as a **first-line AI screening assistant** that instantly analy
 - Calculate what percentage of actual lung tissue is affected using OpenCV-based lung segmentation
 - Grade clinical severity and generate triage priority recommendations
 
-The system uses **YOLOv8**, a state-of-the-art unified deep learning framework, for all three AI models — reducing development complexity while maintaining high accuracy. Unlike traditional approaches requiring separate frameworks for classification and detection, this system uses a single library throughout.
+The system uses **YOLOv8**, a state-of-the-art unified deep learning framework, for all three AI models — reducing development complexity while maintaining high accuracy.
 
 ### Dataset Summary
 
@@ -62,6 +64,8 @@ The system uses **YOLOv8**, a state-of-the-art unified deep learning framework, 
 | **Total** | **21,165** | **100%** |
 
 **Data Split:** 70% Train / 15% Validation / 15% Test (stratified to maintain class balance)
+
+---
 
 ## Architecture
 
@@ -86,7 +90,7 @@ The system architecture diagrams use the following color coding across all modul
 ![System Architecture Overview](daigrams/system_architecture_overview.png)
 
 ### Diagram 2 — Level 1 and Level 2 Module Detail
-*Binary classifier (YOLOv8n-cls) and multi-class classifier (YOLOv8l-cls) — model specs, training data, class distribution, and performance*
+*Binary classifier (YOLOv8s-cls) and multi-class classifier (YOLOv8l-cls) — model specs, training data, class distribution, and performance*
 
 ![Level 1 and Level 2 Modules](daigrams/level1_level2_modules.png)
 
@@ -122,17 +126,17 @@ The system architecture diagrams use the following color coding across all modul
                         │
        ┌────────────────▼────────────────┐
        │  LEVEL 1 — Normal vs Abnormal   │  [BLUE — AI classifier]
-       │  Model: YOLOv8n-cls             │
-       │  Params: 1.4M                   │
-       │  Accuracy: 92.9%                │
+       │  Model: YOLOv8s-cls             │
+       │  Params: 5M                     │
+       │  Accuracy: 96.1%                │
        └────────────────┬────────────────┘
                         │ If confidently NORMAL → Stop
                         │ If ABNORMAL or uncertain → Continue
                         ▼
        ┌────────────────────────────────┐
        │  LEVEL 3 — Opacity Detection   │  [PURPLE — AI detector]
-       │  Model: YOLOv8s-det            │  Runs on EVERY image
-       │  Params: 11.1M                 │  as independent safety check
+       │  Model: YOLOv8m-det            │  Runs on EVERY image
+       │  Params: 25.8M                 │  as independent safety check
        │  mAP50: 53.1%                  │
        └────────────────┬───────────────┘
                         │
@@ -186,9 +190,10 @@ The system architecture diagrams use the following color coding across all modul
 | Input | CLAHE-enhanced RGB image |
 | Classes | Normal, Abnormal |
 | Training images | 21,165 (Normal: 10,192 / Abnormal: 10,973) |
-| Epochs | 150 |
+| Epochs | 100 |
 | Image size | 320px |
 | Preprocessing | CLAHE contrast enhancement |
+| Augmentation | fliplr=0.5, mosaic=0.7, mixup=0.1, degrees=5, translate=0.05, scale=0.2 |
 | Accuracy | 96.1% |
 | Target | 90%+ |
 | Status | Passed |
@@ -205,9 +210,10 @@ Decision logic: if Level 1 returns NORMAL with confidence above 85% and Level 3 
 | Input | CLAHE-enhanced RGB image |
 | Classes | Normal, COVID-19, Lung Opacity, Viral Pneumonia |
 | Training images | 14,814 |
-| Epochs | 100 |
-| Image size | 320px |
+| Epochs | 128 (early stopping, best at epoch 28) |
+| Image size | 640px |
 | Preprocessing | CLAHE contrast enhancement |
+| Augmentation | fliplr=0.5, mosaic=0.0, mixup=0.05, degrees=5, translate=0.05, scale=0.2 |
 | Overall accuracy | 98.0% |
 | Target | 85%+ |
 | Status | Passed |
@@ -215,26 +221,32 @@ Decision logic: if Level 1 returns NORMAL with confidence above 85% and Level 3 
 
 Per-class accuracy on 200 held-out test images:
 
-| Class | Accuracy |
-|-------|----------|
-| Normal | 100% |
-| COVID-19 | 98% |
-| Lung Opacity | 96% |
-| Viral Pneumonia | 98% |
+| Class | Correct | Total | Accuracy |
+|-------|---------|-------|----------|
+| Normal | 50 | 50 | 100% |
+| COVID-19 | 49 | 50 | 98% |
+| Lung Opacity | 48 | 50 | 96% |
+| Viral Pneumonia | 49 | 50 | 98% |
+| **Overall** | **196** | **200** | **98%** |
 
-### Module 3 — Level 3: Opacity Detection (YOLOv8s-det)
+### Module 3 — Level 3: Opacity Detection (YOLOv8m-det)
 
 | Property | Detail |
 |----------|--------|
-| Model | YOLOv8s-det (small detection) |
-| Parameters | 11.1 million |
+| Model | YOLOv8m-det (medium detection) |
+| Parameters | 25.8 million |
 | Input | CLAHE-enhanced RGB image |
 | Classes | 1 (opacity) |
 | Training images | 4,809 (RSNA dataset with YOLO-format labels) |
 | Validation images | 1,203 |
-| Epochs | 150 |
+| Epochs | 82 (early stopping, best at epoch 32) |
 | Image size | 640px |
+| Preprocessing | CLAHE contrast enhancement |
+| Augmentation | mosaic=0.5, fliplr=0.5, scale=0.3 |
+| Optimizer | AdamW |
 | mAP50 | 53.1% |
+| Precision | 51.8% |
+| Recall | 59.2% |
 | Target | 70%+ |
 | Status | Below target (documented limitation) |
 | Output | Bounding boxes, confidence scores, left/right/bilateral location |
@@ -294,21 +306,23 @@ Additional clinical notes appended based on disease and severity:
 - MODERATE severity with ≥30% affected → Monitor oxygen saturation
 - SEVERE → Consider ICU admission
 
+---
+
 ## Features
 
 ### 6-Level Diagnostic Pipeline
 
 **Level 1 — Normal vs Abnormal Screening**
-The first gate in the pipeline. Uses YOLOv8n-cls to perform binary classification on the input X-ray. If the image is classified as normal with high confidence and no opacity boxes are detected, the pipeline stops immediately. An uncertainty-aware fusion mechanism escalates uncertain cases: if Level 1 confidence is below 80% and detection finds boxes, or if 2+ boxes are detected independently, the result is escalated to ABNORMAL regardless of Level 1 output.
+Uses YOLOv8s-cls (5M parameters) to perform binary classification on the input X-ray. If the image is classified as normal with high confidence and no opacity boxes are detected, the pipeline stops immediately. An uncertainty-aware fusion mechanism escalates uncertain cases: if Level 1 confidence is below 80% and detection finds boxes, or if 2+ boxes are detected independently, the result is escalated to ABNORMAL regardless of Level 1 output.
 
 **Level 2 — Disease Classification**
-If the X-ray is abnormal, this level identifies the specific disease. Uses YOLOv8l-cls (large model, 36 million parameters) trained on 14,814 images across 4 classes. Returns a probability distribution across all classes so the user can see not just the top prediction but the confidence for each disease.
+If the X-ray is abnormal, this level identifies the specific disease. Uses YOLOv8l-cls (large model, 36.2 million parameters) trained on 14,814 images across 4 classes. Returns a probability distribution across all classes so the user can see not just the top prediction but the confidence for each disease.
 
 **Level 3 — Opacity Location Detection**
-Uses YOLOv8s-det to draw bounding boxes around detected opacity regions. Crucially, Level 3 runs on every image regardless of Level 1 result — it acts as an independent safety check. Determines whether opacity is in the left lung, right lung, or bilateral. Bilateral involvement automatically upgrades severity at Level 5.
+Uses YOLOv8m-det (25.8M parameters) to draw bounding boxes around detected opacity regions. Crucially, Level 3 runs on every image regardless of Level 1 result — it acts as an independent safety check. Determines whether opacity is in the left lung, right lung, or bilateral. Bilateral involvement automatically upgrades severity at Level 5.
 
 **Level 4 — Affected Area Calculation**
-Uses OpenCV-based lung segmentation combined with intersection logic for medically accurate area calculation. The system first extracts the lung region using adaptive multi-threshold OpenCV segmentation, then computes the intersection between detected opacity boxes and the lung mask. This avoids the inaccuracy of using full image area as denominator.
+Uses OpenCV-based lung segmentation combined with intersection logic for medically accurate area calculation. The system first extracts the lung region using adaptive multi-threshold OpenCV segmentation, then computes the intersection between detected opacity boxes and the lung mask.
 
 ```
 affected % = (opacity box area ∩ lung mask area) / lung mask area × 100
@@ -380,6 +394,8 @@ Single unified framework for both classification and detection, built-in trainin
 | Git | Version control |
 | GitHub | Code repository |
 
+---
+
 ## Infrastructure
 
 ### Training Environment
@@ -398,8 +414,8 @@ Single unified framework for both classification and detection, built-in trainin
 | Model | Epochs | Image Size | Time |
 |-------|--------|-----------|------|
 | Level 1 — YOLOv8s-cls | 100 | 320px | ~1.9 hours |
-| Level 2 — YOLOv8l-cls | 150 | 320px | ~1.4 hours |
-| Level 3 — YOLOv8s-det | 150 | 640px | ~2 hours |
+| Level 2 — YOLOv8l-cls | 128 (early stop) | 320px | ~5.2 hours |
+| Level 3 — YOLOv8m-det | 82 (early stop) | 640px | ~1.4 hours |
 
 ### Project Structure
 
@@ -411,7 +427,9 @@ lung-opacity-detection/
 │   │   └── rsna/                  # RSNA Pneumonia Detection Dataset
 │   └── processed/
 │       ├── level1/                # Binary classification (normal/abnormal)
+│       ├── level1_clahe/          # CLAHE enhanced Level 1 data
 │       ├── level2/                # 4-class classification
+│       ├── level2_clahe/          # CLAHE enhanced Level 2 data
 │       └── level3_detection/      # Detection with YOLO format labels
 ├── models_trained/
 │   ├── level1_binary.pt           # Level 1 trained weights (8.4 MB)
@@ -424,18 +442,25 @@ lung-opacity-detection/
 │   └── src/
 │       ├── App.js                 # Main React component
 │       └── App.css                # UI styling
+├── daigrams/
+│   ├── system_architecture_overview.png
+│   ├── level1_level2_modules.png
+│   ├── level3_segmentation_modules.png
+│   └── level4_5_6_modules.png
 └── README.md
 ```
+
+---
 
 ## Performance
 
 ### Model Accuracy Results
 
-| Level | Model | Parameters | Image Size | Epochs | Preprocessing | Accuracy | Target | Status |
-|-------|-------|-----------|-----------|--------|--------------|----------|--------|--------|
-| Level 1 | YOLOv8s-cls | 5M | 320px | 100 | CLAHE | 96.1% | 90%+ | Passed |
-| Level 2 | YOLOv8l-cls | 36.2M | 320px | 150 | CLAHE | 98.0% | 85%+ | Passed |
-| Level 3 | YOLOv8s-det | 11.1M | 640px | 150 | None | 53.1% mAP50 | 70%+ | Below target |
+| Level | Model | Parameters | Image Size | Epochs | Preprocessing | Augmentation | Accuracy | Target | Status |
+|-------|-------|-----------|-----------|--------|--------------|-------------|----------|--------|--------|
+| Level 1 | YOLOv8s-cls | 5M | 320px | 100 | CLAHE | fliplr, mosaic, mixup | 96.1% | 90%+ | Passed |
+| Level 2 | YOLOv8l-cls | 36.2M | 320px | 150 | CLAHE | fliplr, mixup | 98.0% | 85%+ | Passed |
+| Level 3 | YOLOv8m-det | 25.8M | 640px | 82 (early stop) | CLAHE + augmentation | mosaic, fliplr, scale | 53.1% mAP50 | 70%+ | Below target |
 
 ### Level 2 Per-Class Accuracy (tested on 200 unseen images)
 
@@ -452,24 +477,28 @@ lung-opacity-detection/
 | Metric | Value |
 |--------|-------|
 | mAP50 | 53.1% |
-| Precision | 53.8% |
-| Recall | 56.1% |
+| Precision | 51.8% |
+| Recall | 59.2% |
 | Training images | 4,809 |
 | Validation images | 1,203 |
+
+---
 
 ## Known Limitations
 
 **Level 3 Detection Below Target**
-Detection achieved 53.1% mAP50 against a 70% target. Opacity boundaries on chest X-rays are inherently ambiguous — even experienced radiologists sometimes disagree on exact boundaries. With only 6,012 training images (detection tasks typically require 50,000+), this performance is expected. Multiple retraining iterations were conducted across 5 different training runs with varying model sizes, image resolutions, and augmentation strategies. The performance ceiling is determined by dataset size rather than training configuration. This limitation is acknowledged and documented honestly.
+Detection achieved 53.1% mAP50 against a 70% target. Opacity boundaries on chest X-rays are inherently ambiguous — even experienced radiologists sometimes disagree on exact boundaries. With only 6,012 training images (detection tasks typically require 50,000+), this performance is expected even with a medium-sized model (YOLOv8m, 25.8M parameters). Multiple retraining iterations were conducted across 5 different training runs with varying model sizes, image resolutions, and augmentation strategies. The performance ceiling is determined by dataset size rather than training configuration.
 
 **OpenCV-Based Lung Segmentation**
-Level 4 uses an OpenCV multi-threshold segmentation approach rather than a deep learning segmentation model. While this avoids external library dependencies and works reliably across standard PA X-rays, it may produce less precise lung boundaries on images with unusual positioning, very high contrast variation, or visible medical equipment. The multi-threshold approach with fallback logic ensures robustness across most standard chest X-rays.
+Level 4 uses an OpenCV multi-threshold segmentation approach rather than a deep learning segmentation model. While this avoids external library dependencies and works reliably across standard PA X-rays, it may produce less precise lung boundaries on images with unusual positioning, very high contrast variation, or visible medical equipment.
 
 **Standard PA X-Rays Only**
 Models were trained exclusively on standard Posterior-Anterior (PA) chest X-rays taken in controlled conditions. Portable bedside X-rays, AP-view X-rays, and ICU X-rays with visible medical equipment may produce lower confidence scores.
 
 **Dataset Scope**
 Training data sourced from public Kaggle datasets. These may not represent the full diversity of real-world clinical imaging across different equipment, patient populations, and geographic regions.
+
+---
 
 ## Deployment
 
@@ -511,6 +540,7 @@ Frontend running at: `http://localhost:3000`
 | GET | `/api/health` | Check server status | < 1 second |
 | POST | `/api/analyze` | Analyze chest X-ray | < 10 seconds |
 
+---
 
 ## Future Enhancements
 
@@ -523,6 +553,8 @@ Frontend running at: `http://localhost:3000`
 - Integrate with Electronic Health Records (EHR) systems
 - Add batch processing for multiple X-rays simultaneously
 - Implement user authentication for multi-user clinical environments
+
+---
 
 ## Academic Context
 
