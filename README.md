@@ -558,8 +558,8 @@ Frontend running at: `http://localhost:3000`
 
 ## Academic Context
 
-**Course:** INFO6255 — Advanced Medical Device Software Engineering
+**Course:** INFO7410 — Advanced Medical Device Software Engineering
 **Institution:** Northeastern University
 **Student:** Bhavya Reddy
-**Instructor:** Professor Servattalab
+**Instructor:** Professor Bemin
 **Submission:** Individual Project
