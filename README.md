@@ -4,8 +4,6 @@ An AI-powered chest X-ray diagnostic tool that analyzes medical images through a
 
 > **Disclaimer:** This system is developed for academic research purposes only. It is not intended for clinical diagnosis or medical decision-making without review and confirmation by a licensed medical professional.
 
----
-
 ## Table of Contents
 
 - [Overview](#overview)
@@ -18,8 +16,6 @@ An AI-powered chest X-ray diagnostic tool that analyzes medical images through a
 - [Known Limitations](#known-limitations)
 - [Future Enhancements](#future-enhancements)
 - [Academic Context](#academic-context)
-
----
 
 ## Overview
 
@@ -66,8 +62,6 @@ The system uses **YOLOv8**, a state-of-the-art unified deep learning framework, 
 | **Total** | **21,165** | **100%** |
 
 **Data Split:** 70% Train / 15% Validation / 15% Test (stratified to maintain class balance)
-
----
 
 ## Architecture
 
@@ -183,18 +177,19 @@ The system architecture diagrams use the following color coding across all modul
        JSON response → React frontend → Complete diagnostic report
 ```
 
-### Module 1 — Level 1: Binary Classifier (YOLOv8n-cls)
+### Module 1 — Level 1: Binary Classifier (YOLOv8s-cls)
 
 | Property | Detail |
 |----------|--------|
-| Model | YOLOv8n-cls (nano classification) |
-| Parameters | 1.4 million |
+| Model | YOLOv8s-cls (small classification) |
+| Parameters | 5 million |
 | Input | CLAHE-enhanced RGB image |
 | Classes | Normal, Abnormal |
 | Training images | 21,165 (Normal: 10,192 / Abnormal: 10,973) |
-| Epochs | 50 |
-| Image size | 224px |
-| Accuracy | 92.9% |
+| Epochs | 150 |
+| Image size | 320px |
+| Preprocessing | CLAHE contrast enhancement |
+| Accuracy | 96.1% |
 | Target | 90%+ |
 | Status | Passed |
 | Output | NORMAL / ABNORMAL + confidence % |
@@ -210,8 +205,9 @@ Decision logic: if Level 1 returns NORMAL with confidence above 85% and Level 3 
 | Input | CLAHE-enhanced RGB image |
 | Classes | Normal, COVID-19, Lung Opacity, Viral Pneumonia |
 | Training images | 14,814 |
-| Epochs | 50 |
+| Epochs | 100 |
 | Image size | 320px |
+| Preprocessing | CLAHE contrast enhancement |
 | Overall accuracy | 98.0% |
 | Target | 85%+ |
 | Status | Passed |
@@ -297,8 +293,6 @@ Additional clinical notes appended based on disease and severity:
 - COVID-19 detected → Recommend isolation precautions
 - MODERATE severity with ≥30% affected → Monitor oxygen saturation
 - SEVERE → Consider ICU admission
-
----
 
 ## Features
 
@@ -386,8 +380,6 @@ Single unified framework for both classification and detection, built-in trainin
 | Git | Version control |
 | GitHub | Code repository |
 
----
-
 ## Infrastructure
 
 ### Training Environment
@@ -403,11 +395,11 @@ Single unified framework for both classification and detection, built-in trainin
 
 ### Training Time
 
-| Model | Epochs | Time |
-|-------|--------|------|
-| Level 1 — YOLOv8n-cls | 50 | ~4 hours |
-| Level 2 — YOLOv8l-cls | 50 | ~1.4 hours |
-| Level 3 — YOLOv8s-det | 150 | ~2 hours |
+| Model | Epochs | Image Size | Time |
+|-------|--------|-----------|------|
+| Level 1 — YOLOv8s-cls | 100 | 320px | ~1.9 hours |
+| Level 2 — YOLOv8l-cls | 150 | 320px | ~1.4 hours |
+| Level 3 — YOLOv8s-det | 150 | 640px | ~2 hours |
 
 ### Project Structure
 
@@ -435,17 +427,15 @@ lung-opacity-detection/
 └── README.md
 ```
 
----
-
 ## Performance
 
 ### Model Accuracy Results
 
-| Level | Model | Parameters | Accuracy | Target | Status |
-|-------|-------|-----------|----------|--------|--------|
-| Level 1 | YOLOv8n-cls | 1.4M | 92.9% | 90%+ | Passed |
-| Level 2 | YOLOv8l-cls | 36.2M | 98.0% | 85%+ | Passed |
-| Level 3 | YOLOv8s-det | 11.1M | 53.1% mAP50 | 70%+ | Below target |
+| Level | Model | Parameters | Image Size | Epochs | Preprocessing | Accuracy | Target | Status |
+|-------|-------|-----------|-----------|--------|--------------|----------|--------|--------|
+| Level 1 | YOLOv8s-cls | 5M | 320px | 100 | CLAHE | 96.1% | 90%+ | Passed |
+| Level 2 | YOLOv8l-cls | 36.2M | 320px | 150 | CLAHE | 98.0% | 85%+ | Passed |
+| Level 3 | YOLOv8s-det | 11.1M | 640px | 150 | None | 53.1% mAP50 | 70%+ | Below target |
 
 ### Level 2 Per-Class Accuracy (tested on 200 unseen images)
 
@@ -467,8 +457,6 @@ lung-opacity-detection/
 | Training images | 4,809 |
 | Validation images | 1,203 |
 
----
-
 ## Known Limitations
 
 **Level 3 Detection Below Target**
@@ -482,8 +470,6 @@ Models were trained exclusively on standard Posterior-Anterior (PA) chest X-rays
 
 **Dataset Scope**
 Training data sourced from public Kaggle datasets. These may not represent the full diversity of real-world clinical imaging across different equipment, patient populations, and geographic regions.
-
----
 
 ## Deployment
 
@@ -525,7 +511,6 @@ Frontend running at: `http://localhost:3000`
 | GET | `/api/health` | Check server status | < 1 second |
 | POST | `/api/analyze` | Analyze chest X-ray | < 10 seconds |
 
----
 
 ## Future Enhancements
 
@@ -538,8 +523,6 @@ Frontend running at: `http://localhost:3000`
 - Integrate with Electronic Health Records (EHR) systems
 - Add batch processing for multiple X-rays simultaneously
 - Implement user authentication for multi-user clinical environments
-
----
 
 ## Academic Context
 
