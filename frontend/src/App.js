@@ -140,6 +140,17 @@ function App() {
                 <p className="result-value">{results.level3.location}</p>
                 <p>Boxes detected: {results.level3.boxes_detected}</p>
                 <p>Bilateral: {results.level3.is_bilateral ? 'Yes' : 'No'}</p>
+
+                {results.annotated_image && (
+                  <div className="annotated-image-wrapper">
+                    <p>Opacity Detection Overlay</p>
+                    <img
+                      src={`data:image/png;base64,${results.annotated_image}`}
+                      alt="Annotated X-Ray with opacity regions"
+                      className="annotated-image"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
