@@ -486,6 +486,9 @@ lung-opacity-detection/
 
 ## Known Limitations
 
+**Non-Chest X-Ray Input**
+The system was trained exclusively on standard chest X-rays. Uploading other image types — leg X-rays, arm X-rays, spine X-rays, hand X-rays, MRI scans, CT scans, ultrasound images, or non-medical images — will produce unreliable and meaningless results. The models have no awareness of input type and will attempt to analyze any image uploaded. Input validation to reject non-chest X-rays is listed as a future enhancement.
+
 **Level 3 Detection Below Target**
 Detection achieved 53.1% mAP50 against a 70% target. Opacity boundaries on chest X-rays are inherently ambiguous — even experienced radiologists sometimes disagree on exact boundaries. With only 6,012 training images (detection tasks typically require 50,000+), this performance is expected even with a medium-sized model (YOLOv8m, 25.8M parameters). Multiple retraining iterations were conducted across 5 different training runs with varying model sizes, image resolutions, and augmentation strategies. The performance ceiling is determined by dataset size rather than training configuration.
 
